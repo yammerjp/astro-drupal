@@ -1,0 +1,19 @@
+FROM mirror.gcr.io/bitnami/drupal:10
+
+USER root
+
+# Install additional tools
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create directories for config export
+RUN mkdir -p /config /scripts && \
+    chown -R 1001:1001 /config /scripts
+
+# Copy scripts as root
+COPY scripts/enable-modules.sh /scripts/
+RUN chmod +x /scripts/*.sh && chown -R 1001:1001 /scripts
+
+USER 1001
