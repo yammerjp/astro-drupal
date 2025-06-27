@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /config /scripts && \
     chown -R 1001:1001 /config /scripts
 
-# Copy scripts as root
-COPY scripts/enable-modules.sh /scripts/
-RUN chmod +x /scripts/*.sh && chown -R 1001:1001 /scripts
+# Copy Docker scripts
+COPY docker-scripts/ /docker-scripts/
+RUN chmod +x /docker-scripts/*.sh && chown -R 1001:1001 /docker-scripts
 
 USER 1001

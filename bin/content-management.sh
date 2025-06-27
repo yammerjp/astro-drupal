@@ -7,29 +7,29 @@ COMMAND=${1:-help}
 case $COMMAND in
   setup)
     echo "Setting up content structure..."
-    docker exec astro-drupal-drupal-1 /scripts/setup-content.sh
+    docker compose exec drupal /scripts/setup-content.sh
     ;;
   
   insert)
     echo "Inserting sample content..."
-    docker exec astro-drupal-drupal-1 /scripts/insert-sample-content.sh
+    docker compose exec drupal /scripts/insert-sample-content.sh
     ;;
   
   reset)
     echo "Resetting all content..."
-    docker exec astro-drupal-drupal-1 /scripts/reset-content.sh
+    docker compose exec drupal /scripts/reset-content.sh
     ;;
   
   export)
     echo "Exporting content..."
-    docker exec astro-drupal-drupal-1 /scripts/export-content.sh
+    docker compose exec drupal /scripts/export-content.sh
     ;;
   
   refresh)
     echo "Performing full content refresh (reset + setup + insert)..."
-    docker exec astro-drupal-drupal-1 /scripts/reset-content.sh
-    docker exec astro-drupal-drupal-1 /scripts/setup-content.sh
-    docker exec astro-drupal-drupal-1 /scripts/insert-sample-content.sh
+    docker compose exec drupal /scripts/reset-content.sh
+    docker compose exec drupal /scripts/setup-content.sh
+    docker compose exec drupal /scripts/insert-sample-content.sh
     ;;
   
   help|*)

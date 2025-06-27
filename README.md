@@ -19,16 +19,15 @@ AstroプロジェクトにDrupal Headless CMSを統合した開発環境です�
 
 ### 1. 環境変数の設定
 
-```bash
-cp .env.example .env
-```
+開発環境では、各サービスの`.env.development`ファイルが使用されます。
+本番環境では`.env.production`を使用します。
 
-必要に応じて`.env`ファイルの値を変更してください。
+カスタマイズが必要な場合は、各ディレクトリの環境変数ファイルを編集してください。
 
 ### 2. 開発環境の起動
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 初回起動時は以下の処理が自動的に実行されます：
@@ -56,7 +55,7 @@ docker-compose up -d
 
 ```bash
 # 設定をエクスポート
-docker-compose exec drupal drush config:export --destination=/config/sync
+docker compose exec drupal drush config:export --destination=/config/sync
 
 # エクスポートされた設定を確認
 ls -la config/sync/
@@ -92,35 +91,35 @@ ls -la config/sync/
 
 ```bash
 # コンテンツ構造のセットアップ（フィールド、タクソノミー）
-./scripts/content-management.sh setup
+./bin/content-management.sh setup
 
 # サンプルコンテンツの挿入
-./scripts/content-management.sh insert
+./bin/content-management.sh insert
 
 # すべてのコンテンツをリセット（削除）
-./scripts/content-management.sh reset
+./bin/content-management.sh reset
 
 # コンテンツをJSONにエクスポート
-./scripts/content-management.sh export
+./bin/content-management.sh export
 
 # 完全リフレッシュ（リセット→セットアップ→挿入）
-./scripts/content-management.sh refresh
+./bin/content-management.sh refresh
 ```
 
 ### Drushコマンド
 
 ```bash
 # キャッシュクリア
-docker-compose exec drupal drush cr
+docker compose exec drupal drush cr
 
 # 設定のインポート
-docker-compose exec drupal drush config:import --source=/config/sync
+docker compose exec drupal drush config:import --source=/config/sync
 
 # モジュールの有効化
-docker-compose exec drupal drush en module_name
+docker compose exec drupal drush en module_name
 
 # データベースのバックアップ
-docker-compose exec drupal drush sql:dump > backup.sql
+docker compose exec drupal drush sql:dump > backup.sql
 ```
 
 ## トラブルシューティング
@@ -129,20 +128,20 @@ docker-compose exec drupal drush sql:dump > backup.sql
 
 ```bash
 # ログを確認
-docker-compose logs drupal
+docker compose logs drupal
 
 # コンテナを再起動
-docker-compose restart drupal
+docker compose restart drupal
 ```
 
 ### 設定がインポートできない場合
 
 ```bash
 # キャッシュをクリア
-docker-compose exec drupal drush cr
+docker compose exec drupal drush cr
 
 # 設定の差分を確認
-docker-compose exec drupal drush config:status
+docker compose exec drupal drush config:status
 ```
 
 ## 本番環境へのデプロイ
@@ -150,19 +149,19 @@ docker-compose exec drupal drush config:status
 ### Docker Composeを使用した本番環境
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f compose.production.yaml up -d
 ```
 
 ### 個別のDockerイメージビルド
 
 1. Drupalイメージ
 ```bash
-docker build -t your-registry/drupal:latest .
+docker build -f drupal/Dockerfile.production -t your-registry/drupal:latest ./drupal
 ```
 
 2. Astroイメージ
 ```bash
-docker build -f Dockerfile.astro.prod -t your-registry/astro:latest .
+docker build -f astro/Dockerfile.production -t your-registry/astro:latest ./astro
 ```
 
 ### Kubernetes ConfigMapの適用
@@ -189,15 +188,32 @@ volumeMounts:
 
 ```
 .
-├── src/                    # Astroプロジェクト
-├── docker-compose.yml      # 開発環境設定
-├── Dockerfile             # 本番用イメージ
-├── Dockerfile.dev         # 開発用イメージ
-├── config/                # Drupal設定
-│   └── sync/             # エクスポートされた設定
-├── scripts/               # ユーティリティスクリプト
-│   ├── docker-entrypoint.sh
-│   ├── enable-modules.sh
+├── astro/                    # Astroアプリケーション
+│   ├── src/                  # ソースコード
+│   ├── public/               # 静的ファイル
+│   ├── Dockerfile            # 開発用
+│   ├── Dockerfile.production # 本番用
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── astro.config.mjs
+├── drupal/                   # Drupal関連
+│   ├── config/               # 設定ファイル
+│   │   ├── sync/            # 設定同期
+│   │   ├── settings.local.php
+│   │   └── cors.settings.php
+│   ├── scripts/              # 管理スクリプト
+│   │   ├── setup-content.sh
+│   │   ├── insert-sample-content.sh
+│   │   ├── reset-content.sh
+│   │   └── export-content.sh
+│   ├── docker-scripts/       # コンテナ内スクリプト
+│   │   └── enable-modules.sh
+│   ├── Dockerfile            # 開発用
+│   └── Dockerfile.production # 本番用
+├── bin/                      # ユーティリティ
+│   ├── content-management.sh
 │   └── generate-configmap.sh
-└── .env.example           # 環境変数サンプル
+├── compose.yaml              # 開発環境
+├── compose.production.yaml   # 本番環境
+└── .env.example              # 環境変数サンプル
 ```

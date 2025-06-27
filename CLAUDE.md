@@ -14,48 +14,48 @@ This is an Astro + Drupal Headless CMS project that combines:
 ### Development Environment
 ```bash
 # Start full development environment (Astro + Drupal + MariaDB)
-docker-compose up -d
+docker compose up -d
 
 # Enable Drupal modules (run after first startup)
-docker exec astro-drupal-drupal-1 /scripts/enable-modules.sh
+docker compose exec drupal /scripts/enable-modules.sh
 
 # View logs
-docker-compose logs -f astro   # Astro logs
-docker-compose logs -f drupal  # Drupal logs
+docker compose logs -f astro   # Astro logs
+docker compose logs -f drupal  # Drupal logs
 
 # Restart services
-docker-compose restart astro
-docker-compose restart drupal
+docker compose restart astro
+docker compose restart drupal
 
 # Production environment
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f compose.production.yaml up -d
 ```
 
 ### Drupal Management
 ```bash
 # Access Drupal container
-docker-compose exec drupal bash
+docker compose exec drupal bash
 
 # Run Drush commands
-docker-compose exec drupal drush cr                    # Clear cache
-docker-compose exec drupal drush config:export --destination=/config/sync  # Export config
-docker-compose exec drupal drush config:import --source=/config/sync       # Import config
-docker-compose exec drupal drush sql:dump > backup.sql                    # Backup database
+docker compose exec drupal drush cr                    # Clear cache
+docker compose exec drupal drush config:export --destination=/config/sync  # Export config
+docker compose exec drupal drush config:import --source=/config/sync       # Import config
+docker compose exec drupal drush sql:dump > backup.sql                    # Backup database
 
 # Generate Kubernetes ConfigMap from exported config
-./scripts/generate-configmap.sh
+./bin/generate-configmap.sh
 ```
 
 ### Content Management
 ```bash
 # Full content refresh with sample data
-./scripts/content-management.sh refresh
+./bin/content-management.sh refresh
 
 # Individual operations
-./scripts/content-management.sh setup    # Set up content structure
-./scripts/content-management.sh insert   # Insert sample articles
-./scripts/content-management.sh reset    # Delete all content
-./scripts/content-management.sh export   # Export to JSON
+./bin/content-management.sh setup    # Set up content structure
+./bin/content-management.sh insert   # Insert sample articles
+./bin/content-management.sh reset    # Delete all content
+./bin/content-management.sh export   # Export to JSON
 ```
 
 ### Access URLs
@@ -82,19 +82,19 @@ docker-compose exec drupal drush sql:dump > backup.sql                    # Back
 - Settings are included via settings.php modification during module enablement
 - ConfigMap generation script creates Kubernetes-ready configurations
 
-### Key Scripts
-- `scripts/enable-modules.sh` - Installs and enables JSON API, Admin Toolbar, and Gin theme
-- `scripts/generate-configmap.sh` - Converts Drupal config exports to Kubernetes ConfigMap
-- `scripts/docker-entrypoint.sh` - (Removed due to issues, using standard Bitnami entrypoint)
+### Scripts Organization
+- `drupal/scripts/` - Content management scripts (mounted as volumes)
+- `drupal/docker-scripts/` - Container initialization scripts (included in image)
+- `bin/` - User-facing utility scripts for project management
 
 ### Astro Configuration
 - Server-side rendering (SSR) enabled with Node.js adapter
 - Configured for standalone mode
 - Pages structure:
-  - `src/pages/index.astro` - Homepage with latest articles
-  - `src/pages/articles/index.astro` - Article listing page
-  - `src/pages/articles/[id].astro` - Individual article pages (dynamic)
-- API client in `src/lib/drupal.ts` for fetching content from Drupal JSON API
+  - `astro/src/pages/index.astro` - Homepage with latest articles
+  - `astro/src/pages/articles/index.astro` - Article listing page
+  - `astro/src/pages/articles/[id].astro` - Individual article pages (dynamic)
+- API client in `astro/src/lib/drupal.ts` for fetching content from Drupal JSON API
 
 ### Content Structure
 - **Article** content type with custom fields:
@@ -106,7 +106,7 @@ docker-compose exec drupal drush sql:dump > backup.sql                    # Back
 
 ## Important Notes
 
-1. **First-time setup**: After `docker-compose up -d`, wait ~45 seconds for Drupal installation, then run the enable-modules script
+1. **First-time setup**: After `docker compose up -d`, wait ~45 seconds for Drupal installation, then run the enable-modules script
 2. **CORS**: Currently configured for development with permissive settings - restrict for production
 3. **Mirror Registry**: Using mirror.gcr.io instead of Docker Hub to avoid rate limits
 4. **Config Export**: Always export to `/config/sync` directory for ConfigMap generation
