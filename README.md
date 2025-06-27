@@ -24,10 +24,11 @@ AstroプロジェクトにDrupal Headless CMSを統合した開発環境です�
 
 カスタマイズが必要な場合は、各ディレクトリの環境変数ファイルを編集してください。
 
-**特定のホスト名でアクセスする場合**（Tailscaleなど）:
+**特定のホスト名でアクセスする場合**:
 ```bash
-# astro/.env.developmentを編集
-ALLOWED_HOSTS=localhost,your-hostname.example.com
+# astro/.envを作成（.gitignoreで除外済み）
+cp astro/.env.development astro/.env
+# ALLOWED_HOSTSに必要なホスト名を追加
 ```
 
 ### 2. 開発環境の起動

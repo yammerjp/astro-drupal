@@ -110,4 +110,4 @@ docker compose exec drupal drush sql:dump > backup.sql                    # Back
 2. **CORS**: Currently configured for development with permissive settings - restrict for production
 3. **Mirror Registry**: Using mirror.gcr.io instead of Docker Hub to avoid rate limits
 4. **Config Export**: Always export to `/config/sync` directory for ConfigMap generation
-5. **Vite Allowed Hosts**: To access from non-localhost hostnames (e.g., Tailscale), add them to `ALLOWED_HOSTS` in `astro/.env.development`
+5. **Vite Allowed Hosts**: To access from non-localhost hostnames, create `astro/.env` and add hostnames to `ALLOWED_HOSTS`
