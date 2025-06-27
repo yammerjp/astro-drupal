@@ -1,4 +1,4 @@
-FROM mirror.gcr.io/bitnami/drupal:10
+FROM mirror.gcr.io/bitnami/drupal:11
 
 USER root
 
