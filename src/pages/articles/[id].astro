@@ -1,0 +1,107 @@
+---
+import { fetchArticles, fetchArticleByUuid, formatDate } from '../../lib/drupal';
+
+export async function getStaticPaths() {
+  const articles = await fetchArticles();
+  return articles.map(article => ({
+    params: { id: article.id },
+  }));
+}
+
+const { id } = Astro.params;
+const article = await fetchArticleByUuid(id);
+
+if (!article) {
+  return Astro.redirect('/404');
+}
+---
+
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{article.attributes.title} | Drupal + Astro</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.8;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      .article-header {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .article-title {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 0 0 1rem;
+        line-height: 1.2;
+      }
+      .article-meta {
+        color: #6b7280;
+        font-size: 0.875rem;
+      }
+      .article-content {
+        font-size: 1.125rem;
+      }
+      .article-content h2 {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+      }
+      .article-content ul,
+      .article-content ol {
+        margin: 1rem 0;
+        padding-left: 2rem;
+      }
+      .article-content li {
+        margin-bottom: 0.5rem;
+      }
+      .article-content pre {
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      .article-content code {
+        background: #f3f4f6;
+        padding: 0.125rem 0.25rem;
+        border-radius: 2px;
+        font-size: 0.875em;
+      }
+      .article-content pre code {
+        background: none;
+        padding: 0;
+      }
+      .back-link {
+        display: inline-block;
+        margin-top: 2rem;
+        color: #3b82f6;
+        text-decoration: none;
+      }
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <article>
+      <header class="article-header">
+        <h1 class="article-title">{article.attributes.title}</h1>
+        <div class="article-meta">
+          公開日: {formatDate(article.attributes.created)}
+          {article.attributes.changed !== article.attributes.created && (
+            <span> | 更新日: {formatDate(article.attributes.changed)}</span>
+          )}
+        </div>
+      </header>
+      
+      <div class="article-content" set:html={article.attributes.body?.processed || article.attributes.body?.value || ''} />
+    </article>
+    
+    <a href="/articles" class="back-link">← 記事一覧に戻る</a>
+  </body>
+</html>

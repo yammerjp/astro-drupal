@@ -35,11 +35,13 @@ docker-compose up -d
 - Drupalのインストール
 - 必要なモジュールの有効化（JSON API, CORS, Gin theme）
 - 管理画面テーマの設定
+- Astroの依存関係インストール
 
-### 3. Drupalへのアクセス
+### 3. アクセスURL
 
-- **URL**: http://localhost:8081
-- **管理者ユーザー**: 初回アクセス時に作成
+- **Astro開発サーバー**: http://localhost:4321
+- **Drupal管理画面**: http://localhost:8081
+- **Drupal JSON API**: http://localhost:8081/jsonapi
 
 ## 開発ワークフロー
 
@@ -84,7 +86,28 @@ ls -la config/sync/
 
 開発環境では全てのオリジンからのアクセスを許可しています。本番環境では適切に制限してください。
 
-## Drushコマンド
+## コンテンツ管理
+
+### サンプルコンテンツの管理
+
+```bash
+# コンテンツ構造のセットアップ（フィールド、タクソノミー）
+./scripts/content-management.sh setup
+
+# サンプルコンテンツの挿入
+./scripts/content-management.sh insert
+
+# すべてのコンテンツをリセット（削除）
+./scripts/content-management.sh reset
+
+# コンテンツをJSONにエクスポート
+./scripts/content-management.sh export
+
+# 完全リフレッシュ（リセット→セットアップ→挿入）
+./scripts/content-management.sh refresh
+```
+
+### Drushコマンド
 
 ```bash
 # キャッシュクリア
@@ -124,17 +147,30 @@ docker-compose exec drupal drush config:status
 
 ## 本番環境へのデプロイ
 
-1. 本番用Dockerイメージのビルド
+### Docker Composeを使用した本番環境
+
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### 個別のDockerイメージビルド
+
+1. Drupalイメージ
 ```bash
 docker build -t your-registry/drupal:latest .
 ```
 
-2. ConfigMapの適用
+2. Astroイメージ
+```bash
+docker build -f Dockerfile.astro.prod -t your-registry/astro:latest .
+```
+
+### Kubernetes ConfigMapの適用
 ```bash
 kubectl apply -f drupal-configmap.yaml
 ```
 
-3. Kubernetesマニフェストでの使用例
+### Kubernetesマニフェストでの使用例
 ```yaml
 volumes:
   - name: drupal-config

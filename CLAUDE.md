@@ -13,20 +13,22 @@ This is an Astro + Drupal Headless CMS project that combines:
 
 ### Development Environment
 ```bash
-# Start development environment (Drupal + MariaDB)
+# Start full development environment (Astro + Drupal + MariaDB)
 docker-compose up -d
 
 # Enable Drupal modules (run after first startup)
 docker exec astro-drupal-drupal-1 /scripts/enable-modules.sh
 
-# Start Astro development server
-npm run dev
+# View logs
+docker-compose logs -f astro   # Astro logs
+docker-compose logs -f drupal  # Drupal logs
 
-# Build Astro for production
-npm run build
+# Restart services
+docker-compose restart astro
+docker-compose restart drupal
 
-# Preview production build
-npm run preview
+# Production environment
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ### Drupal Management
@@ -44,19 +46,35 @@ docker-compose exec drupal drush sql:dump > backup.sql                    # Back
 ./scripts/generate-configmap.sh
 ```
 
+### Content Management
+```bash
+# Full content refresh with sample data
+./scripts/content-management.sh refresh
+
+# Individual operations
+./scripts/content-management.sh setup    # Set up content structure
+./scripts/content-management.sh insert   # Insert sample articles
+./scripts/content-management.sh reset    # Delete all content
+./scripts/content-management.sh export   # Export to JSON
+```
+
 ### Access URLs
-- Drupal: http://localhost:8081
+- Astro Frontend: http://localhost:4321
 - Drupal Admin: http://localhost:8081/user/login
 - JSON API: http://localhost:8081/jsonapi
-- Astro Dev Server: http://localhost:4321
 
 ## Architecture
 
 ### Docker Setup
-- Uses Bitnami Drupal 10 image with custom Dockerfile.dev for development
-- MariaDB for database
-- Port 8081 is used (not 8080) to avoid conflicts
-- Volumes mount `./config` and `./scripts` as read-only
+- **Astro**: Node.js Alpine image with hot-reload for development
+- **Drupal**: Bitnami Drupal 10 image with custom Dockerfile.dev
+- **MariaDB**: Bitnami MariaDB for database
+- Port mappings: Astro (4321), Drupal (8081), MariaDB (internal)
+- Volumes: 
+  - Astro source files mounted read-only for hot-reload
+  - Drupal config and scripts mounted read-only
+  - Named volumes for node_modules and data persistence
+- Network: Services communicate via Docker network (drupal:8080 internally)
 
 ### Configuration Management
 - `config/settings.local.php` - Local development settings (database, caching, etc.)
@@ -72,7 +90,19 @@ docker-compose exec drupal drush sql:dump > backup.sql                    # Back
 ### Astro Configuration
 - Server-side rendering (SSR) enabled with Node.js adapter
 - Configured for standalone mode
-- Currently basic setup in `src/pages/index.astro`
+- Pages structure:
+  - `src/pages/index.astro` - Homepage with latest articles
+  - `src/pages/articles/index.astro` - Article listing page
+  - `src/pages/articles/[id].astro` - Individual article pages (dynamic)
+- API client in `src/lib/drupal.ts` for fetching content from Drupal JSON API
+
+### Content Structure
+- **Article** content type with custom fields:
+  - `field_summary` - Article summary/excerpt
+  - `field_featured_image` - Featured image
+  - `field_tags` - Taxonomy reference for tags
+- **Tags** vocabulary for categorizing articles
+- Sample content includes 5 Japanese articles about web development
 
 ## Important Notes
 

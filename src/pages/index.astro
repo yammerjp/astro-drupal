@@ -1,6 +1,8 @@
 ---
-// Server-side code
-const message = "Hello from Astro SSR!";
+import { fetchArticles, formatDate } from '../lib/drupal';
+
+const recentArticles = await fetchArticles();
+const latestArticles = recentArticles.slice(0, 3);
 ---
 
 <html lang="ja">
@@ -9,12 +11,139 @@ const message = "Hello from Astro SSR!";
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
-    <title>Astro SSR</title>
+    <title>Astro + Drupal Headless CMS</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.6;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      .hero {
+        text-align: center;
+        padding: 4rem 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        margin-bottom: 3rem;
+      }
+      .hero h1 {
+        font-size: 3rem;
+        margin: 0 0 1rem;
+      }
+      .hero p {
+        font-size: 1.25rem;
+        margin: 0;
+      }
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+      }
+      .feature {
+        padding: 2rem;
+        background: #f9fafb;
+        border-radius: 8px;
+      }
+      .feature h3 {
+        margin-top: 0;
+        color: #1f2937;
+      }
+      .recent-articles {
+        margin-bottom: 3rem;
+      }
+      .article-list {
+        display: grid;
+        gap: 1.5rem;
+      }
+      .article-item {
+        padding: 1.5rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s;
+      }
+      .article-item:hover {
+        transform: translateY(-2px);
+        background: #f3f4f6;
+      }
+      .article-item h3 {
+        margin: 0 0 0.5rem;
+        color: #1f2937;
+      }
+      .article-item p {
+        margin: 0 0 0.5rem;
+        color: #4b5563;
+      }
+      .article-item .date {
+        font-size: 0.875rem;
+        color: #6b7280;
+      }
+      .cta {
+        text-align: center;
+        padding: 2rem;
+        background: #f3f4f6;
+        border-radius: 8px;
+      }
+      .cta a {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background: #3b82f6;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 500;
+      }
+      .cta a:hover {
+        background: #2563eb;
+      }
+    </style>
   </head>
   <body>
-    <main>
-      <h1>{message}</h1>
-      <p>現在時刻: {new Date().toLocaleString('ja-JP')}</p>
-    </main>
+    <div class="hero">
+      <h1>Astro + Drupal</h1>
+      <p>高速なフロントエンドと強力なヘッドレスCMSの組み合わせ</p>
+    </div>
+
+    <section class="features">
+      <div class="feature">
+        <h3>⚡ 高速なパフォーマンス</h3>
+        <p>Astroの静的サイト生成とSSRにより、超高速なページロードを実現</p>
+      </div>
+      <div class="feature">
+        <h3>📝 柔軟なコンテンツ管理</h3>
+        <p>DrupalのJSON APIを使用して、構造化されたコンテンツを簡単に管理</p>
+      </div>
+      <div class="feature">
+        <h3>🚀 モダンな開発体験</h3>
+        <p>TypeScript対応、ホットリロード、コンポーネントベースの開発</p>
+      </div>
+    </section>
+
+    {latestArticles.length > 0 && (
+      <section class="recent-articles">
+        <h2>最新の記事</h2>
+        <div class="article-list">
+          {latestArticles.map((article) => (
+            <a href={`/articles/${article.id}`} class="article-item">
+              <h3>{article.attributes.title}</h3>
+              {article.attributes.field_summary && (
+                <p>{article.attributes.field_summary.value}</p>
+              )}
+              <div class="date">{formatDate(article.attributes.created)}</div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <div class="cta">
+      <h2>さらに詳しく</h2>
+      <p>すべての記事を見る</p>
+      <a href="/articles">記事一覧へ →</a>
+    </div>
   </body>
 </html>

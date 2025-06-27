@@ -1,0 +1,100 @@
+---
+import { fetchArticles, formatDate } from '../../lib/drupal';
+
+const articles = await fetchArticles();
+---
+
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>記事一覧 | Drupal + Astro</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.6;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      .articles-grid {
+        display: grid;
+        gap: 2rem;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      }
+      .article-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.5rem;
+        transition: box-shadow 0.2s;
+      }
+      .article-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .article-title {
+        font-size: 1.25rem;
+        font-weight: bold;
+        margin: 0 0 0.5rem;
+      }
+      .article-date {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 1rem;
+      }
+      .article-summary {
+        color: #374151;
+        margin-bottom: 1rem;
+      }
+      .article-link {
+        color: #3b82f6;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .article-link:hover {
+        text-decoration: underline;
+      }
+      .no-articles {
+        text-align: center;
+        color: #6b7280;
+        padding: 4rem 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>記事一覧</h1>
+    
+    {articles.length > 0 ? (
+      <div class="articles-grid">
+        {articles.map((article) => (
+          <article class="article-card">
+            <h2 class="article-title">{article.attributes.title}</h2>
+            <div class="article-date">
+              {formatDate(article.attributes.created)}
+            </div>
+            {article.attributes.field_summary && (
+              <p class="article-summary">
+                {article.attributes.field_summary.value}
+              </p>
+            )}
+            <a 
+              href={`/articles/${article.id}`} 
+              class="article-link"
+            >
+              続きを読む →
+            </a>
+          </article>
+        ))}
+      </div>
+    ) : (
+      <div class="no-articles">
+        <p>記事がありません。</p>
+        <p>まず、以下のコマンドでサンプルコンテンツを作成してください：</p>
+        <pre><code>./scripts/content-management.sh refresh</code></pre>
+      </div>
+    )}
+    
+    <p style="margin-top: 2rem;">
+      <a href="/">← ホームに戻る</a>
+    </p>
+  </body>
+</html>
