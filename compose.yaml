@@ -1,40 +1,53 @@
 services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - astro
+      - drupal
+
   astro:
     build:
       context: ./astro
       dockerfile: Dockerfile
-    ports:
-      - "4321:4321"
-    env_file:
-      - ./astro/.env.development
+    environment:
+      DRUPAL_BASE_URL: http://drupal:8080
+      ALLOWED_HOSTS: .localhost,localhost
     volumes:
       - ./astro/src:/app/src:ro
       - ./astro/public:/app/public:ro
       - astro_node_modules:/app/node_modules
     depends_on:
       - drupal
-    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
 
   drupal:
     build:
       context: ./drupal
       dockerfile: Dockerfile
-    ports:
-      - "8081:8080"
-      - "8444:8443"
-    env_file:
-      - ./drupal/.env.development
+    environment:
+      DRUPAL_DATABASE_HOST: mariadb
+      DRUPAL_DATABASE_PORT_NUMBER: 3306
+      DRUPAL_DATABASE_USER: drupal
+      DRUPAL_DATABASE_PASSWORD: drupal
+      DRUPAL_DATABASE_NAME: drupal
+      BITNAMI_DEBUG: true
+      PHP_MEMORY_LIMIT: 256M
     volumes:
       - drupal_data:/bitnami/drupal
-      - ./drupal/config:/config:ro
       - ./drupal/scripts:/scripts:ro
     depends_on:
       - mariadb
 
   mariadb:
     image: mirror.gcr.io/bitnami/mariadb:latest
-    env_file:
-      - ./.env.mariadb
+    environment:
+      MARIADB_USER: drupal
+      MARIADB_PASSWORD: drupal
+      MARIADB_DATABASE: drupal
+      MARIADB_ROOT_PASSWORD: root
     volumes:
       - mariadb_data:/bitnami/mariadb
 
