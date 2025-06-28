@@ -1,36 +1,56 @@
 services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - astro
+      - drupal
+    restart: unless-stopped
+
   astro:
     build:
       context: ./astro
       dockerfile: Dockerfile.production
-    ports:
-      - "4321:4321"
-    env_file:
-      - ./astro/.env.production
+    environment:
+      DRUPAL_BASE_URL: http://drupal:8080
+      NODE_ENV: production
     depends_on:
       - drupal
+    restart: unless-stopped
 
   drupal:
     build:
       context: ./drupal
-      dockerfile: Dockerfile.production
-    ports:
-      - "8081:8080"
-      - "8444:8443"
-    env_file:
-      - ./drupal/.env.production
+      dockerfile: Dockerfile
+    environment:
+      DRUPAL_DATABASE_HOST: mariadb
+      DRUPAL_DATABASE_PORT_NUMBER: 3306
+      DRUPAL_DATABASE_USER: ${DB_USER:-drupal}
+      DRUPAL_DATABASE_PASSWORD: ${DB_PASSWORD:?Database password required}
+      DRUPAL_DATABASE_NAME: ${DB_NAME:-drupal}
+      DRUPAL_HASH_SALT: ${DRUPAL_HASH_SALT:?Hash salt required}
+      BITNAMI_DEBUG: false
+      PHP_MEMORY_LIMIT: 512M
     volumes:
       - drupal_data:/bitnami/drupal
-      - ./drupal/config:/config:ro
+      - ./drupal/scripts:/scripts:ro
     depends_on:
       - mariadb
+    restart: unless-stopped
 
   mariadb:
     image: mirror.gcr.io/bitnami/mariadb:latest
-    env_file:
-      - ./.env.mariadb
+    environment:
+      MARIADB_USER: ${DB_USER:-drupal}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Database password required}
+      MARIADB_DATABASE: ${DB_NAME:-drupal}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Root password required}
     volumes:
       - mariadb_data:/bitnami/mariadb
+    restart: unless-stopped
 
 volumes:
   drupal_data:

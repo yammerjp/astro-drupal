@@ -10,18 +10,17 @@ services:
       - drupal
 
   astro:
-    build:
-      context: ./astro
-      dockerfile: Dockerfile
+    image: node:20-alpine
+    working_dir: /app
     environment:
       DRUPAL_BASE_URL: http://drupal:8080
       ALLOWED_HOSTS: .localhost,localhost
     volumes:
-      - ./astro/src:/app/src:ro
-      - ./astro/public:/app/public:ro
+      - ./astro:/app
       - astro_node_modules:/app/node_modules
     depends_on:
       - drupal
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
 
   drupal:
     build:
