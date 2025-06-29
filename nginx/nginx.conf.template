@@ -1,0 +1,101 @@
+upstream astro {
+    server astro:4321;
+}
+
+upstream drupal {
+    server drupal:8080;
+}
+
+upstream minio {
+    server minio:9000;
+}
+
+upstream minio_console {
+    server minio:9001;
+}
+
+# Astro frontend
+server {
+    listen 80;
+    server_name astro.${DOMAIN_SUFFIX};
+
+    location / {
+        proxy_pass http://astro;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+    }
+}
+
+# Drupal CMS
+server {
+    listen 80;
+    server_name drupal.${DOMAIN_SUFFIX};
+
+    location / {
+        proxy_pass http://drupal;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+    }
+}
+
+# MinIO Console
+server {
+    listen 80;
+    server_name minio.${DOMAIN_SUFFIX};
+
+    location / {
+        proxy_pass http://minio_console;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        
+        # WebSocket support for MinIO Console
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+# S3 Blob Storage (MinIO)
+server {
+    listen 80;
+    server_name blob.${DOMAIN_SUFFIX};
+
+    location / {
+        proxy_pass http://minio;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        
+        # Cache headers for static files
+        proxy_cache_valid 200 302 10m;
+        proxy_cache_valid 404 1m;
+        add_header X-Cache-Status $upstream_cache_status;
+        
+        # CORS headers for S3
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, HEAD";
+        add_header Access-Control-Allow-Headers "Content-Type";
+        
+        # Security headers
+        add_header X-Content-Type-Options nosniff;
+        add_header X-Frame-Options SAMEORIGIN;
+    }
+}
+
+# Default server - return 404 for unmatched requests
+server {
+    listen 80 default_server;
+    server_name _;
+    return 404;
+}
