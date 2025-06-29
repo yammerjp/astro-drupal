@@ -7,7 +7,6 @@ AstroプロジェクトにDrupal Headless CMSを統合した開発環境です�
 - **Astro**: フロントエンドフレームワーク（SSR対応）
 - **Drupal**: Headless CMSとして使用
 - **Docker Compose**: 開発環境の構築
-- **Kubernetes**: 本番環境へのデプロイ（ConfigMap生成）
 
 ## 必要な環境
 
@@ -140,15 +139,6 @@ ls -la config/sync/
 
 # サンプルコンテンツの挿入
 ./bin/content-management.sh insert
-
-# すべてのコンテンツをリセット（削除）
-./bin/content-management.sh reset
-
-# コンテンツをJSONにエクスポート
-./bin/content-management.sh export
-
-# 完全リフレッシュ（リセット→セットアップ→挿入）
-./bin/content-management.sh refresh
 ```
 
 ### Drushコマンド
@@ -244,17 +234,15 @@ volumeMounts:
 ├── drupal/                   # Drupal関連
 │   ├── scripts/              # 管理スクリプト
 │   │   ├── init-database.sh  # DB初期化スクリプト
-│   │   ├── setup-content.sh
-│   │   ├── insert-sample-content.sh
-│   │   ├── reset-content.sh
-│   │   └── export-content.sh
+│   │   ├── setup-content.sh  # コンテンツ構造設定
+│   │   ├── insert-sample-content.sh  # サンプル挿入
+│   │   └── create-articles.php  # 記事作成PHP
 │   ├── Dockerfile            # 開発用
 │   └── Dockerfile.production # 本番用
 ├── nginx/                    # リバースプロキシ設定
 │   └── nginx.conf.template   # envsubstテンプレート
 ├── bin/                      # ユーティリティ
-│   ├── content-management.sh
-│   └── generate-configmap.sh
+│   └── content-management.sh
 ├── compose.yaml              # 開発環境
 ├── compose.production.yaml   # 本番環境
 └── .env.example              # 環境変数サンプル
