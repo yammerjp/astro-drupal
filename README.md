@@ -14,22 +14,21 @@ AstroプロジェクトにDrupal Headless CMSを統合した開発環境です�
 - Docker Desktop
 - Docker Compose
 - Node.js (Astro用)
+- (オプション) S3互換ストレージ（MinIO、AWS S3など）
 
 ## セットアップ
 
 ### 1. 環境変数の設定
 
-開発環境では、各サービスの`.env.development`ファイルが使用されます。
-本番環境では`.env.production`を使用します。
-
-カスタマイズが必要な場合は、各ディレクトリの環境変数ファイルを編集してください。
-
-**特定のホスト名でアクセスする場合**:
 ```bash
-# astro/.envを作成（.gitignoreで除外済み）
-cp astro/.env.development astro/.env
-# ALLOWED_HOSTSに必要なホスト名を追加
+# .envファイルを作成（.env.exampleをコピー）
+cp .env.example .env
+# 必要に応じて編集（ドメイン名、S3設定など）
 ```
+
+主要な環境変数:
+- `DOMAIN_SUFFIX`: サブドメインルーティング用のドメイン（例: `example.com`）
+- `S3_*`: S3/MinIO設定（ファイルストレージ用）
 
 ### 2. 開発環境の起動
 
@@ -37,17 +36,56 @@ cp astro/.env.development astro/.env
 docker compose up -d
 ```
 
-初回起動時は以下の処理が自動的に実行されます：
-- Drupalのインストール
-- 必要なモジュールの有効化（JSON API, CORS, Gin theme）
-- 管理画面テーマの設定
-- Astroの依存関係インストール
+### 3. データベースの初期化（初回のみ）
 
-### 3. アクセスURL
+初回起動後、データベースを初期化する必要があります：
 
-- **Astro開発サーバー**: http://localhost:4321
-- **Drupal管理画面**: http://localhost:8081
-- **Drupal JSON API**: http://localhost:8081/jsonapi
+```bash
+# Drupalのインストールが完了するまで待つ（約45秒）
+sleep 45
+
+# データベース初期化スクリプトを実行
+docker compose exec drupal /scripts/init-database.sh
+```
+
+このスクリプトは以下を実行します：
+- 必要なモジュールの有効化（JSON API, Admin Toolbar, S3FS）
+- Gin管理画面テーマの設定
+- S3FS設定（環境変数から自動設定）
+
+### 4. アクセスURL
+
+サブドメインベースのアクセス（DOMAIN_SUFFIX環境変数で設定）:
+- **Astro**: http://astro.{DOMAIN_SUFFIX}/
+- **Drupal**: http://drupal.{DOMAIN_SUFFIX}/
+- **MinIO Console**: http://minio.{DOMAIN_SUFFIX}/ (開発環境のみ)
+- **Blob Storage**: http://blob.{DOMAIN_SUFFIX}/ (MinIO S3 API)
+
+## ファイルストレージ（S3/MinIO）
+
+### 開発環境でのMinIO使用
+
+開発環境では自動的にMinIOが起動し、S3互換ストレージとして機能します。
+
+```bash
+# MinIO管理画面にアクセス
+# URL: http://minio.{DOMAIN_SUFFIX}/
+# デフォルトログイン: minioadmin / minioadmin
+```
+
+### 本番環境でのS3設定
+
+本番環境では実際のAWS S3や他のS3互換サービスを使用できます：
+
+```bash
+# .env.productionで設定
+S3_ACCESS_KEY=your-access-key
+S3_SECRET_KEY=your-secret-key
+S3_BUCKET=your-bucket-name
+S3_HOSTNAME=s3.amazonaws.com
+S3_USE_HTTPS=true
+S3_USE_PATH_STYLE=false
+```
 
 ## 開発ワークフロー
 
@@ -204,19 +242,16 @@ volumeMounts:
 │   ├── tsconfig.json
 │   └── astro.config.mjs
 ├── drupal/                   # Drupal関連
-│   ├── config/               # 設定ファイル
-│   │   ├── sync/            # 設定同期
-│   │   ├── settings.local.php
-│   │   └── cors.settings.php
 │   ├── scripts/              # 管理スクリプト
+│   │   ├── init-database.sh  # DB初期化スクリプト
 │   │   ├── setup-content.sh
 │   │   ├── insert-sample-content.sh
 │   │   ├── reset-content.sh
 │   │   └── export-content.sh
-│   ├── docker-scripts/       # コンテナ内スクリプト
-│   │   └── enable-modules.sh
 │   ├── Dockerfile            # 開発用
 │   └── Dockerfile.production # 本番用
+├── nginx/                    # リバースプロキシ設定
+│   └── nginx.conf.template   # envsubstテンプレート
 ├── bin/                      # ユーティリティ
 │   ├── content-management.sh
 │   └── generate-configmap.sh

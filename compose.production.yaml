@@ -1,10 +1,12 @@
 services:
   nginx:
-    image: nginx:alpine
+    image: mirror.gcr.io/library/nginx:alpine
     ports:
       - "80:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+    environment:
+      DOMAIN_SUFFIX: ${DOMAIN_SUFFIX}
     depends_on:
       - astro
       - drupal
@@ -34,9 +36,20 @@ services:
       DRUPAL_HASH_SALT: ${DRUPAL_HASH_SALT:?Hash salt required}
       BITNAMI_DEBUG: false
       PHP_MEMORY_LIMIT: 512M
-    volumes:
-      - drupal_data:/bitnami/drupal
-      - ./drupal/scripts:/scripts:ro
+      # S3 configuration - use real S3 or compatible service in production
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3 access key required}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3 secret key required}
+      S3_BUCKET: ${S3_BUCKET:-drupal-files}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_USE_HTTPS: ${S3_USE_HTTPS:-true}
+      S3_HOSTNAME: ${S3_HOSTNAME:-s3.amazonaws.com}
+      S3_USE_PATH_STYLE: ${S3_USE_PATH_STYLE:-false}
+      S3_PUBLIC_FOLDER: ${S3_PUBLIC_FOLDER:-public}
+      S3_PRIVATE_FOLDER: ${S3_PRIVATE_FOLDER:-private}
+      S3_USE_PRESIGNED_URLS: ${S3_USE_PRESIGNED_URLS:-true}
+      S3_PRESIGNED_URL_LIFETIME: ${S3_PRESIGNED_URL_LIFETIME:-180}
+      S3_AS_DEFAULT_SCHEME: ${S3_AS_DEFAULT_SCHEME:-true}
+    # Scripts are included in the image during build
     depends_on:
       - mariadb
     restart: unless-stopped
@@ -53,5 +66,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  drupal_data:
   mariadb_data:

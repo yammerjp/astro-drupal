@@ -36,6 +36,19 @@ services:
       DRUPAL_DATABASE_NAME: drupal
       BITNAMI_DEBUG: true
       PHP_MEMORY_LIMIT: 256M
+      # S3FS configuration
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: drupal-files
+      S3_REGION: us-east-1
+      S3_USE_HTTPS: "false"
+      S3_HOSTNAME: minio:9000
+      S3_USE_PATH_STYLE: "true"
+      S3_PUBLIC_FOLDER: public
+      S3_PRIVATE_FOLDER: private
+      S3_USE_PRESIGNED_URLS: "true"
+      S3_PRESIGNED_URL_LIFETIME: "180"
+      S3_AS_DEFAULT_SCHEME: "true"
     volumes:
       - drupal_data:/bitnami/drupal
       - ./drupal/scripts:/scripts:ro
@@ -60,8 +73,6 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
       MINIO_DEFAULT_BUCKETS: drupal-files
-    ports:
-      - "9001:9001"  # MinIO Console
     volumes:
       - minio_data:/data
     healthcheck:

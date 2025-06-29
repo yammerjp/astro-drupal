@@ -1,3 +1,6 @@
+# Client max body size for file uploads
+client_max_body_size 100M;
+
 upstream astro {
     server astro:4321;
 }
