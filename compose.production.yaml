@@ -55,14 +55,14 @@ services:
     restart: unless-stopped
 
   mariadb:
-    image: mirror.gcr.io/bitnami/mariadb:latest
+    image: mirror.gcr.io/library/mysql:8.0
     environment:
-      MARIADB_USER: ${DB_USER:-drupal}
-      MARIADB_PASSWORD: ${DB_PASSWORD:?Database password required}
-      MARIADB_DATABASE: ${DB_NAME:-drupal}
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Root password required}
+      MYSQL_USER: ${DB_USER:-drupal}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Database password required}
+      MYSQL_DATABASE: ${DB_NAME:-drupal}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Root password required}
     volumes:
-      - mariadb_data:/bitnami/mariadb
+      - mariadb_data:/var/lib/mysql
     restart: unless-stopped
 
 volumes:

@@ -57,14 +57,14 @@ services:
       - minio
 
   mariadb:
-    image: mirror.gcr.io/bitnami/mariadb:latest
+    image: mirror.gcr.io/library/mysql:8.0
     environment:
-      MARIADB_USER: drupal
-      MARIADB_PASSWORD: drupal
-      MARIADB_DATABASE: drupal
-      MARIADB_ROOT_PASSWORD: root
+      MYSQL_USER: drupal
+      MYSQL_PASSWORD: drupal
+      MYSQL_DATABASE: drupal
+      MYSQL_ROOT_PASSWORD: root
     volumes:
-      - mariadb_data:/bitnami/mariadb
+      - mariadb_data:/var/lib/mysql
 
   minio:
     image: minio/minio:latest
