@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DrupalImporter } from '../importer.js';
 import type { DrupalConfig, ExportResult } from '../types.js';
+import { setDefaultLogger, Logger, LogLevel } from '../logger.js';
+import { ConfigError, NetworkError, AuthenticationError } from '../errors.js';
 
 // Mock ky
 vi.mock('ky', () => ({
@@ -10,6 +12,15 @@ vi.mock('ky', () => ({
     })),
   },
 }));
+
+// Mock logger to avoid console output during tests
+const mockLogger = {
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+  setLevel: vi.fn(),
+};
 
 describe('DrupalImporter', () => {
   let importer: DrupalImporter;
@@ -58,7 +69,14 @@ describe('DrupalImporter', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set mock logger to suppress console output
+    setDefaultLogger(mockLogger as unknown as Logger);
     importer = new DrupalImporter(mockConfig);
+  });
+
+  afterEach(() => {
+    // Reset to default logger after tests
+    setDefaultLogger(new Logger({ level: LogLevel.INFO }));
   });
 
   describe('constructor', () => {
@@ -66,15 +84,17 @@ describe('DrupalImporter', () => {
       expect(importer).toBeInstanceOf(DrupalImporter);
     });
 
-    it('should throw an error if baseUrl is not provided', () => {
+    it('should throw ConfigError if baseUrl is not provided', () => {
+      expect(() => new DrupalImporter({ ...mockConfig, baseUrl: '' })).toThrow(ConfigError);
       expect(() => new DrupalImporter({ ...mockConfig, baseUrl: '' })).toThrow(
-        'baseUrl is required',
+        'Invalid configuration',
       );
     });
 
-    it('should throw an error if credentials are not provided', () => {
+    it('should throw AuthenticationError if credentials are not provided', () => {
+      expect(() => new DrupalImporter({ baseUrl: 'http://localhost' })).toThrow(AuthenticationError);
       expect(() => new DrupalImporter({ baseUrl: 'http://localhost' })).toThrow(
-        'username and password are required for import',
+        'Username and password are required for import',
       );
     });
   });
@@ -168,7 +188,7 @@ describe('DrupalImporter', () => {
           {
             type: 'taxonomy_term',
             item: 'Technology',
-            error: 'Failed to create term',
+            error: 'Failed to import taxonomy term Technology: Failed to create term',
           },
         ],
       });
@@ -215,6 +235,108 @@ describe('DrupalImporter', () => {
       expect(nodeData?.relationships?.field_tags?.data).toEqual([
         { type: 'taxonomy_term--tags', id: 'new-term-id' }
       ]);
+    });
+
+    it('should handle validation errors for invalid export data', async () => {
+      const invalidData = {
+        metadata: {
+          exportedAt: '2025-01-01T00:00:00Z',
+          sourceUrl: 'http://source.example.com',
+          // Missing exportMethod
+        },
+        taxonomyTerms: [],
+        nodes: [],
+      };
+
+      await expect(importer.import(invalidData as ExportResult)).rejects.toThrow('Invalid import data format');
+    });
+
+    it('should handle authentication errors', async () => {
+      const authError = {
+        response: { status: 401 },
+        message: 'Unauthorized',
+      };
+      const mockPost = vi.fn()
+        .mockRejectedValueOnce(authError)
+        .mockRejectedValueOnce(authError);
+
+      const mockKyInstance = {
+        post: mockPost,
+      };
+
+      const { default: ky } = await import('ky');
+      (ky.extend as any).mockReturnValue(mockKyInstance);
+
+      importer = new DrupalImporter(mockConfig);
+      
+      const result = await importer.import(mockExportData);
+      expect(result.success).toBe(false);
+      expect(result.errors).toHaveLength(2); // Both term and node fail
+      expect(result.errors[0].error).toContain('Authentication failed');
+      expect(result.errors[1].error).toContain('Authentication failed');
+    });
+
+    it('should log progress when logger level is INFO', async () => {
+      const infoLogger = new Logger({ level: LogLevel.INFO });
+      const infoSpy = vi.spyOn(infoLogger, 'info');
+      setDefaultLogger(infoLogger);
+
+      const mockPost = vi.fn()
+        .mockResolvedValueOnce({ json: () => Promise.resolve({ data: { id: 'term-1' } }) })
+        .mockResolvedValueOnce({ json: () => Promise.resolve({ data: { id: 'node-1' } }) });
+
+      const mockKyInstance = {
+        post: mockPost,
+      };
+
+      const { default: ky } = await import('ky');
+      (ky.extend as any).mockReturnValue(mockKyInstance);
+
+      importer = new DrupalImporter(mockConfig);
+      await importer.import(mockExportData);
+
+      expect(infoSpy).toHaveBeenCalledWith('Starting content import');
+      expect(infoSpy).toHaveBeenCalledWith('Importing 1 taxonomy terms');
+      expect(infoSpy).toHaveBeenCalledWith('Importing 1 nodes');
+      expect(infoSpy).toHaveBeenCalledWith('Import completed', {
+        success: true,
+        imported: {
+          taxonomyTerms: 1,
+          nodes: 1,
+        },
+        errors: 0,
+      });
+    });
+
+    it('should handle nodes with missing references gracefully', async () => {
+      const dataWithMissingRef: ExportResult = {
+        ...mockExportData,
+        nodes: [{
+          ...mockExportData.nodes[0],
+          fields: {
+            ...mockExportData.nodes[0].fields,
+            field_tags: [{ target_id: 999 }], // Non-existent term ID
+          },
+        }],
+      };
+
+      const mockPost = vi.fn()
+        .mockResolvedValueOnce({ json: () => Promise.resolve({ data: { id: 'term-1' } }) })
+        .mockResolvedValueOnce({ json: () => Promise.resolve({ data: { id: 'node-1' } }) });
+
+      const mockKyInstance = {
+        post: mockPost,
+      };
+
+      const { default: ky } = await import('ky');
+      (ky.extend as any).mockReturnValue(mockKyInstance);
+
+      importer = new DrupalImporter(mockConfig);
+      const result = await importer.import(dataWithMissingRef);
+
+      // Should still succeed but skip the missing reference
+      expect(result.success).toBe(true);
+      expect(result.imported.nodes).toBe(1);
     });
   });
 });

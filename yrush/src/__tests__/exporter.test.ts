@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DrupalExporter } from '../exporter.js';
 import type { DrupalConfig } from '../types.js';
+import { setDefaultLogger, Logger, LogLevel } from '../logger.js';
+import { ConfigError, NetworkError } from '../errors.js';
 
 // Mock ky
 vi.mock('ky', () => ({
@@ -10,6 +12,15 @@ vi.mock('ky', () => ({
     })),
   },
 }));
+
+// Mock logger to avoid console output during tests
+const mockLogger = {
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+  setLevel: vi.fn(),
+};
 
 describe('DrupalExporter', () => {
   let exporter: DrupalExporter;
@@ -21,7 +32,14 @@ describe('DrupalExporter', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set mock logger to suppress console output
+    setDefaultLogger(mockLogger as unknown as Logger);
     exporter = new DrupalExporter(mockConfig);
+  });
+
+  afterEach(() => {
+    // Reset to default logger after tests
+    setDefaultLogger(new Logger({ level: LogLevel.INFO }));
   });
 
   describe('constructor', () => {
@@ -29,10 +47,15 @@ describe('DrupalExporter', () => {
       expect(exporter).toBeInstanceOf(DrupalExporter);
     });
 
-    it('should throw an error if baseUrl is not provided', () => {
+    it('should throw ConfigError if baseUrl is not provided', () => {
+      expect(() => new DrupalExporter({ ...mockConfig, baseUrl: '' })).toThrow(ConfigError);
       expect(() => new DrupalExporter({ ...mockConfig, baseUrl: '' })).toThrow(
-        'baseUrl is required',
+        'Invalid configuration',
       );
+    });
+
+    it('should throw ConfigError if baseUrl is invalid', () => {
+      expect(() => new DrupalExporter({ ...mockConfig, baseUrl: 'not-a-url' })).toThrow(ConfigError);
     });
   });
 
@@ -176,7 +199,62 @@ describe('DrupalExporter', () => {
 
       exporter = new DrupalExporter(mockConfig);
 
-      await expect(exporter.export()).rejects.toThrow('Failed to export content: Network error');
+      await expect(exporter.export()).rejects.toThrow(NetworkError);
+      await expect(exporter.export()).rejects.toThrow('Failed to fetch');
+    });
+
+    it('should handle HTTP errors with specific messages', async () => {
+      const httpError = {
+        response: { status: 401 },
+        message: 'Unauthorized',
+      };
+      const mockGet = vi.fn().mockRejectedValueOnce(httpError);
+
+      const mockKyInstance = {
+        get: mockGet,
+      };
+
+      const { default: ky } = await import('ky');
+      (ky.extend as any).mockReturnValue(mockKyInstance);
+
+      exporter = new DrupalExporter(mockConfig);
+
+      await expect(exporter.export()).rejects.toThrow(NetworkError);
+    });
+
+    it('should log debug messages when logger level is DEBUG', async () => {
+      // Set logger to debug level
+      const debugLogger = new Logger({ level: LogLevel.DEBUG });
+      const debugSpy = vi.spyOn(debugLogger, 'debug');
+      setDefaultLogger(debugLogger);
+
+      const mockTaxonomyResponse = {
+        data: [],
+        links: { self: { href: 'http://localhost:8081/jsonapi/taxonomy_term/tags' } },
+      };
+
+      const mockNodeResponse = {
+        data: [],
+        links: { self: { href: 'http://localhost:8081/jsonapi/node/article' } },
+      };
+
+      const mockGet = vi.fn()
+        .mockResolvedValueOnce({ json: () => Promise.resolve(mockTaxonomyResponse) })
+        .mockResolvedValueOnce({ json: () => Promise.resolve(mockNodeResponse) })
+        .mockResolvedValueOnce({ json: () => Promise.resolve({ data: [] }) });
+
+      const mockKyInstance = {
+        get: mockGet,
+      };
+
+      const { default: ky } = await import('ky');
+      (ky.extend as any).mockReturnValue(mockKyInstance);
+
+      exporter = new DrupalExporter(mockConfig);
+      await exporter.export();
+
+      expect(debugSpy).toHaveBeenCalledWith('Initializing DrupalExporter', { baseUrl: 'http://localhost:8081' });
+      expect(debugSpy).toHaveBeenCalledWith('Fetching taxonomy terms and nodes');
     });
   });
 });

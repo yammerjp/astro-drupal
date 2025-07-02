@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/yrush"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "yammerjp"
+    reviewers:
+      - "yammerjp"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
