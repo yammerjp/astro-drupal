@@ -1,0 +1,36 @@
+{
+  "defaults": {
+    "url": "http://localhost:8081",
+    "outputDir": "./exports",
+    "parallel": true,
+    "concurrency": 5,
+    "showProgress": true
+  },
+  "profiles": {
+    "local": {
+      "url": "http://localhost:8081",
+      "username": "admin",
+      "description": "Local development environment"
+    },
+    "staging": {
+      "url": "https://staging.example.com",
+      "username": "deploy",
+      "description": "Staging environment"
+    },
+    "production": {
+      "url": "https://example.com",
+      "username": "admin",
+      "description": "Production environment (handle with care!)"
+    }
+  },
+  "export": {
+    "pretty": true,
+    "streaming": true,
+    "includeMetadata": true
+  },
+  "import": {
+    "dryRun": false,
+    "continueOnError": true,
+    "batchSize": 50
+  }
+}

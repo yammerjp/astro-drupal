@@ -298,14 +298,9 @@ describe('DrupalImporter', () => {
       expect(infoSpy).toHaveBeenCalledWith('Starting content import');
       expect(infoSpy).toHaveBeenCalledWith('Importing 1 taxonomy terms');
       expect(infoSpy).toHaveBeenCalledWith('Importing 1 nodes');
-      expect(infoSpy).toHaveBeenCalledWith('Import completed', {
-        success: true,
-        imported: {
-          taxonomyTerms: 1,
-          nodes: 1,
-        },
-        errors: 0,
-      });
+      expect(infoSpy).toHaveBeenCalledWith(
+        'Import completed - Success: true, Terms: 1, Nodes: 1, Errors: 0'
+      );
     });
 
     it('should handle nodes with missing references gracefully', async () => {

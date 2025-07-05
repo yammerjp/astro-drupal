@@ -118,11 +118,7 @@ export class DrupalImporter {
       }
     }
 
-    this.logger.info('Import completed', {
-      success: result.success,
-      imported: result.imported,
-      errors: result.errors.length,
-    });
+    this.logger.info(`Import completed - Success: ${result.success}, Terms: ${result.imported.taxonomyTerms}, Nodes: ${result.imported.nodes}, Errors: ${result.errors.length}`);
 
     return result;
   }

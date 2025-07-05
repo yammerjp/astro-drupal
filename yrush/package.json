@@ -9,6 +9,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config-loader.d.ts",
+      "import": "./dist/config-loader.js"
+    },
+    "./progress": {
+      "types": "./dist/progress.d.ts",
+      "import": "./dist/progress.js"
+    },
+    "./parallel": {
+      "types": "./dist/parallel-processor.d.ts",
+      "import": "./dist/parallel-processor.js"
     }
   },
   "bin": {
@@ -22,6 +34,7 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
     "prepare": "npm run build"
   },
   "keywords": [
@@ -41,7 +54,7 @@
     "LICENSE"
   ],
   "devDependencies": {
-    "@types/node": "^24.0.8",
+    "@types/node": "24.0.10",
     "@typescript-eslint/eslint-plugin": "^8.35.1",
     "@typescript-eslint/parser": "^8.35.1",
     "@vitest/coverage-v8": "^3.2.4",
@@ -53,6 +66,7 @@
   },
   "dependencies": {
     "commander": "^14.0.0",
-    "ky": "^1.8.1"
+    "ky": "^1.8.1",
+    "p-limit": "6.2.0"
   }
 }

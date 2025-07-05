@@ -12,7 +12,7 @@ export interface LoggerOptions {
 }
 
 export class Logger {
-  private level: LogLevel;
+  public level: LogLevel;
   private timestamps: boolean;
   private colors: boolean;
 

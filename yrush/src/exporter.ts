@@ -13,9 +13,9 @@ import { getLogger } from './logger.js';
 import { validateConfig } from './validators.js';
 
 export class DrupalExporter {
-  private config: DrupalConfig;
+  protected config: DrupalConfig;
   private client: KyInstance;
-  private logger = getLogger();
+  protected logger = getLogger();
 
   constructor(config: DrupalConfig) {
     try {
@@ -82,10 +82,7 @@ export class DrupalExporter {
         nodes: [...articles, ...pages].map(this.transformNode),
       };
 
-      this.logger.info('Export completed successfully', {
-        terms: result.taxonomyTerms.length,
-        nodes: result.nodes.length,
-      });
+      this.logger.info(`Export completed successfully - Terms: ${result.taxonomyTerms.length}, Nodes: ${result.nodes.length}`);
 
       return result;
     } catch (error) {
@@ -139,7 +136,7 @@ export class DrupalExporter {
     return items;
   }
 
-  private async fetchJsonApi<T>(endpoint: string): Promise<JsonApiResponse<T>> {
+  protected async fetchJsonApi<T>(endpoint: string): Promise<JsonApiResponse<T>> {
     try {
       const response = await this.client.get(endpoint);
       return response.json<JsonApiResponse<T>>();
@@ -160,7 +157,7 @@ export class DrupalExporter {
     }
   }
 
-  private transformTaxonomyTerm(term: JsonApiResource): TaxonomyTerm {
+  protected transformTaxonomyTerm(term: JsonApiResource): TaxonomyTerm {
     const relationships = term.relationships as {
       vid?: { data?: { id: string } };
     };
@@ -175,7 +172,7 @@ export class DrupalExporter {
     };
   }
 
-  private transformNode(node: JsonApiResource): Node {
+  protected transformNode(node: JsonApiResource): Node {
     const nodeAttributes = node.attributes as {
       drupal_internal__nid?: number;
       title?: string;
